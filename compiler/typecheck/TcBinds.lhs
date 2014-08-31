@@ -39,7 +39,7 @@ import TysPrim
 import Id
 import Var
 import VarSet
-import VarEnv( TidyEnv )
+import VarEnv
 import Module
 import Name
 import NameSet
@@ -1311,15 +1311,21 @@ tcTySig (L loc (PatSynSig (L _ name) args ty (_, ex_tvs, prov) (_, univ_tvs, req
        { ty' <- tcHsSigType ctxt ty
        ; req' <- tcHsContext req
        ; tcHsTyVarBndrs ex_tvs $ \ ex_tvs' -> do
-       { args' <- mapM (tcHsSigType ctxt) $ case args of
+       { ex_tvs' <- return $ filter (`notElem` univ_tvs') ex_tvs'
+       ; args' <- mapM (tcHsSigType ctxt) $ case args of
            PrefixPatSyn tys -> tys
            InfixPatSyn ty1 ty2 -> [ty1, ty2]
        ; prov' <- tcHsContext prov
-       ; traceTc "tcTySig" $ ppr ty' $$ ppr args' $$ ppr (ex_tvs', prov') $$ ppr (univ_tvs', req')
+       ; ex_tvs'' <- mapM (\tv -> newSigTyVar (getName tv) (tyVarKind tv)) ex_tvs'
+       -- ; ex_tvs'' <- return ex_tvs'
+       ; let subst = mkTvSubst (mkInScopeSet (zipVarEnv ex_tvs'' ex_tvs'')) $ zipTyEnv ex_tvs' (map mkTyVarTy ex_tvs'')
+             args'' = substTys subst args'
+             prov'' = substTys subst prov'
+       ; traceTc "tcTySig" $ ppr ty' $$ ppr args'' $$ ppr (ex_tvs'', prov'') $$ ppr (univ_tvs', req')
        ; let tpsi = TPSI{ patsig_name = name,
-                          patsig_tau = mkFunTys args' ty',
-                          patsig_ex = ex_tvs',
-                          patsig_prov = prov',
+                          patsig_tau = mkFunTys args'' ty',
+                          patsig_ex = ex_tvs'',
+                          patsig_prov = prov'',
                           patsig_univ = univ_tvs',
                           patsig_req = req' }
        ; return [TcPatSynInfo tpsi]}}}

@@ -860,7 +860,7 @@ renameSig ctxt sig@(PatSynSig v args ty (ex_flag, _ex_tvs, prov) (univ_flag, _un
         ; let (ex_kvs, ex_tvs) = extractHsTysRdrTyVars (arg_tys ++ unLoc prov)
               ex_kvs' = filterOut (`elem` univ_kvs) ex_kvs
               ex_tvs' = filterOut (`elem` univ_tvs) ex_tvs
-              
+
         ; let ex_tv_bndrs = mkHsQTvs . userHsTyVarBndrs loc $ ex_tvs'
 
         ; bindHsTyVars doc Nothing ex_kvs' ex_tv_bndrs $ \ ex_tyvars -> do
