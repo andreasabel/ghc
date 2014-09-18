@@ -990,11 +990,30 @@ mkMethIds sig_fn clas tyvars dfun_ev_vars inst_tys sel_id
     -- Check that any type signatures have exactly the right type
     check_inst_sig hs_ty@(L loc _)
        = setSrcSpan loc $
-         do { sig_ty <- tcHsSigType (FunSigCtxt sel_name) hs_ty
+         do { let userTypeCtxt = FunSigCtxt sel_name
+            ; sig_ty <- tcHsSigType userTypeCtxt hs_ty
             ; inst_sigs <- xoptM Opt_InstanceSigs
-            ; if inst_sigs then
-                unless (sig_ty `eqType` local_meth_ty)
-                       (badInstSigErr sel_name local_meth_ty)
+            ; if inst_sigs then do
+                -- Check that type provided in the type signature
+                -- is both a sub- and a super-type of the type
+                -- originating from the method signature in the class.
+                -- As a consequence, the types are equal, and we can discard
+                -- the coercions.  (Keep fingers crossed.)
+                let ctOrigin = AmbigOrigin userTypeCtxt
+                void $ tcSubType ctOrigin userTypeCtxt sig_ty local_meth_ty
+                (errMsgs, result) <- tryTcErrs $
+                       tcSubType ctOrigin userTypeCtxt local_meth_ty sig_ty
+                -- In case the provided type is more general than the expected
+                -- type, we give a custom error message.
+                -- Really, providing a method implementation of a more general type
+                -- OUGHT to be allowed, so the error coming from a failure of subtyping
+                -- is confusing.
+                -- However, in the latter case we cannot simply discard the coercion...
+                case result of
+                  Just _coercion -> return ()
+                  Nothing -> badInstSigErr sel_name local_meth_ty
+                -- unless (sig_ty `eqType` local_meth_ty)
+                --        (badInstSigErr sel_name local_meth_ty)
               else
                 addErrTc (misplacedInstSig sel_name hs_ty)
             ; return sig_ty }
