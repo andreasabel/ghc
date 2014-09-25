@@ -1,0 +1,6 @@
+
+T9582-instance-sig-too-general.hs:17:8:
+    Couldn't match type ‘[Char]’ with ‘forall a. Show a => [a]’
+    Expected type: T Int
+      Actual type: forall a. Show a => [a]
+    In the instance declaration for ‘C Int’

@@ -1,0 +1,6 @@
+
+T9582-instance-sig-too-special.hs:17:8:
+    Couldn't match type ‘a’ with ‘Char’
+    Expected type: T [a]
+      Actual type: String
+    In the instance declaration for ‘C [a]’
