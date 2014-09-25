@@ -1001,19 +1001,26 @@ mkMethIds sig_fn clas tyvars dfun_ev_vars inst_tys sel_id
                 -- the coercions.  (Keep fingers crossed.)
                 let ctOrigin = AmbigOrigin userTypeCtxt
                 void $ tcSubType ctOrigin userTypeCtxt sig_ty local_meth_ty
-                (errMsgs, result) <- tryTcErrs $
-                       tcSubType ctOrigin userTypeCtxt local_meth_ty sig_ty
                 -- In case the provided type is more general than the expected
-                -- type, we give a custom error message.
-                -- Really, providing a method implementation of a more general type
-                -- OUGHT to be allowed, so the error coming from a failure of subtyping
-                -- is confusing.
-                -- However, in the latter case we cannot simply discard the coercion...
-                case result of
-                  Just _coercion -> return ()
-                  Nothing -> badInstSigErr sel_name local_meth_ty
-                -- unless (sig_ty `eqType` local_meth_ty)
-                --        (badInstSigErr sel_name local_meth_ty)
+                -- type, we take care that the error reports actual and
+                -- expected type correctly.
+                -- Using PatSigOrigin does the job, but it is a bit hacky.
+                void $ tcSubType PatSigOrigin userTypeCtxt local_meth_ty sig_ty
+                -- -- ORIGINAL PLAN:
+                -- -- (failed as tryTcErrs does not capture the error)
+                -- (errMsgs, result) <- tryTcErrs $
+                --        tcSubType ctOrigin userTypeCtxt local_meth_ty sig_ty
+                -- -- In case the provided type is more general than the expected
+                -- -- type, we give a custom error message.
+                -- -- Really, providing a method implementation of a more general type
+                -- -- OUGHT to be allowed, so the error coming from a failure of subtyping
+                -- -- is confusing.
+                -- -- However, in the latter case we cannot simply discard the coercion...
+                -- case result of
+                --   Just _coercion -> return ()
+                --   Nothing -> badInstSigErr sel_name local_meth_ty
+                -- -- unless (sig_ty `eqType` local_meth_ty)
+                -- --        (badInstSigErr sel_name local_meth_ty)
               else
                 addErrTc (misplacedInstSig sel_name hs_ty)
             ; return sig_ty }
