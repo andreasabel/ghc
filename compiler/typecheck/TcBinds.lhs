@@ -659,7 +659,7 @@ mkExport prag_fn qtvs theta (poly_name, mb_sig, mono_id)
         -- See Note [Impedence matching]
         ; (wrap, wanted) <- addErrCtxtM (mk_bind_msg inferred True poly_name (idType poly_id)) $
                             captureConstraints $
-                            tcSubType origin sig_ctxt sel_poly_ty (idType poly_id)
+                            tcSubType NotSwapped sig_ctxt sel_poly_ty (idType poly_id)
         ; ev_binds <- simplifyTop wanted
 
         ; return (ABE { abe_wrap = mkWpLet (EvBinds ev_binds) <.> wrap
@@ -669,7 +669,6 @@ mkExport prag_fn qtvs theta (poly_name, mb_sig, mono_id)
   where
     inferred = isNothing mb_sig
     prag_sigs = prag_fn poly_name
-    origin    = AmbigOrigin sig_ctxt
     sig_ctxt  = InfSigCtxt poly_name
 
 mkInferredPolyId :: Name -> [TyVar] -> TcThetaType -> TcType -> TcM Id
@@ -826,12 +825,11 @@ tcSpec poly_id prag@(SpecSig fun_name hs_ty inl)
                  (ptext (sLit "SPECIALISE pragma for non-overloaded function")
                   <+> quotes (ppr fun_name))
                   -- Note [SPECIALISE pragmas]
-        ; wrap <- tcSubType origin sig_ctxt (idType poly_id) spec_ty
+        ; wrap <- tcSubType NotSwapped sig_ctxt (idType poly_id) spec_ty
         ; return (SpecPrag poly_id wrap inl) }
   where
     name      = idName poly_id
     poly_ty   = idType poly_id
-    origin    = SpecPragOrigin name
     sig_ctxt  = FunSigCtxt name
     spec_ctxt prag = hang (ptext (sLit "In the SPECIALISE pragma")) 2 (ppr prag)
 

@@ -999,13 +999,11 @@ mkMethIds sig_fn clas tyvars dfun_ev_vars inst_tys sel_id
                 -- originating from the method signature in the class.
                 -- As a consequence, the types are equal, and we can discard
                 -- the coercions.  (Keep fingers crossed.)
-                let ctOrigin = AmbigOrigin userTypeCtxt
-                void $ tcSubType ctOrigin userTypeCtxt sig_ty local_meth_ty
+                void $ tcSubType NotSwapped userTypeCtxt sig_ty local_meth_ty
                 -- In case the provided type is more general than the expected
                 -- type, we take care that the error reports actual and
                 -- expected type correctly.
-                -- Using PatSigOrigin does the job, but it is a bit hacky.
-                void $ tcSubType PatSigOrigin userTypeCtxt local_meth_ty sig_ty
+                void $ tcSubType IsSwapped userTypeCtxt local_meth_ty sig_ty
                 -- -- ORIGINAL PLAN:
                 -- -- (failed as tryTcErrs does not capture the error)
                 -- (errMsgs, result) <- tryTcErrs $
@@ -1199,7 +1197,7 @@ tcSpecInst dfun_id prag@(SpecInstSig hs_ty)
         ; (tyvars, theta, clas, tys) <- tcHsInstHead SpecInstCtxt hs_ty
         ; let (_, spec_dfun_ty) = mkDictFunTy tyvars theta clas tys
 
-        ; co_fn <- tcSubType (SpecPragOrigin name) SpecInstCtxt
+        ; co_fn <- tcSubType NotSwapped SpecInstCtxt
                              (idType dfun_id) spec_dfun_ty
         ; return (SpecPrag dfun_id co_fn defaultInlinePragma) }
   where

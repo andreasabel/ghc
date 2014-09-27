@@ -1271,8 +1271,10 @@ tcPatSig ctxt sig res_ty
         -- that should be brought into scope
 
         ; if null sig_tvs then do {
-                -- Just do the subsumption check and return
-                  wrap <- tcSubType PatSigOrigin ctxt res_ty sig_ty
+                -- Just do the subsumption check and return.
+                -- For the error message, the roles of the two types are swapped:
+                -- sig_ty is the actual type, and res_ty the expected one.
+                  wrap <- tcSubType IsSwapped ctxt res_ty sig_ty
                 ; return (sig_ty, [], wrap)
         } else do
                 -- Type signature binds at least one scoped type variable
@@ -1297,7 +1299,7 @@ tcPatSig ctxt sig res_ty
         ; checkTc (null bad_tvs) (badPatSigTvs sig_ty bad_tvs)
 
         -- Now do a subsumption check of the pattern signature against res_ty
-        ; wrap <- tcSubType PatSigOrigin ctxt res_ty sig_ty
+        ; wrap <- tcSubType IsSwapped ctxt res_ty sig_ty
 
         -- Phew!
         ; return (sig_ty, sig_tvs, wrap)

@@ -42,6 +42,7 @@ import VarSet
 import ErrUtils
 import DynFlags
 import Util
+import BasicTypes
 import ListSetOps
 import SrcLoc
 import Outputable
@@ -89,7 +90,7 @@ checkAmbiguity ctxt ty
          -- tyvars are skolemised, we can safely use tcSimplifyTop
        ; (_wrap, wanted) <- addErrCtxtM (mk_msg ty') $
                             captureConstraints $
-                            tcSubType (AmbigOrigin ctxt) ctxt ty' ty'
+                            tcSubType NotSwapped ctxt ty' ty'
        ; simplifyAmbiguityCheck ty wanted
 
        ; traceTc "Done ambiguity check for" (ppr ty) }

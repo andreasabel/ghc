@@ -310,15 +310,15 @@ which takes an HsExpr of type actual_ty into one of type
 expected_ty.
 
 \begin{code}
-tcSubType :: CtOrigin -> UserTypeCtxt -> TcSigmaType -> TcSigmaType -> TcM HsWrapper
+tcSubType :: SwapFlag -> UserTypeCtxt -> TcSigmaType -> TcSigmaType -> TcM HsWrapper
 -- Check that ty_actual is more polymorphic than ty_expected
 -- Both arguments might be polytypes, so we must instantiate and skolemise
 -- Returns a wrapper of shape   ty_actual ~ ty_expected
-tcSubType origin ctxt ty_actual ty_expected
+tcSubType swap ctxt ty_actual ty_expected
   | isSigmaTy ty_actual
   = do { (sk_wrap, inst_wrap)
             <- tcGen ctxt ty_expected $ \ _ sk_rho -> do
-            { (in_wrap, in_rho) <- deeplyInstantiate origin ty_actual
+            { (in_wrap, in_rho) <- deeplyInstantiate i_origin ty_actual
             ; cow <- unify in_rho sk_rho
             ; return (coToHsWrapper cow <.> in_wrap) }
        ; return (sk_wrap <.> inst_wrap) }
@@ -333,11 +333,12 @@ tcSubType origin ctxt ty_actual ty_expected
     -- we call tcSubType with (expected, actual)
     -- rather than (actual, expected).   To get error messages the
     -- right way round we create the appropriate origin.
-    unify ty1 ty2 = uType u_origin ty1 ty2
-      where
-         u_origin = case origin of 
-                      PatSigOrigin -> TypeEqOrigin { uo_actual = ty2, uo_expected = ty1 }
-                      _other       -> TypeEqOrigin { uo_actual = ty1, uo_expected = ty2 }
+    unify  ty1 ty2 = uType (origin ty1 ty2) ty1 ty2
+    origin ty1 ty2 =
+      if isSwapped swap
+        then TypeEqOrigin { uo_actual = ty2, uo_expected = ty1 }
+        else TypeEqOrigin { uo_actual = ty1, uo_expected = ty2 }
+    i_origin = origin ty_actual ty_expected
 
 tcInfer :: (TcType -> TcM a) -> TcM (a, TcType)
 tcInfer tc_infer = do { ty  <- newFlexiTyVarTy openTypeKind
